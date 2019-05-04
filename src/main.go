@@ -57,10 +57,10 @@ func WaterMark(img image.Image, markText string) (image.Image, error) {
 	c.DrawImage(rect, img)
 
 	loadFont,_ := getFont("/Users/kanshan/golandProjects/idcard_watermark/fonts/SourceHanSansK-Normal.ttf");
-	vg.AddFont("xxx",loadFont)
+	vg.AddFont("SourceHanSansK",loadFont)
 
 
-	fontStyle, _ := vg.MakeFont("xxx", vg.Inch*0.15)
+	fontStyle, _ := vg.MakeFont("SourceHanSansK", vg.Inch*0.15)
 
 	// repeat the markText
 	markTextWidth := fontStyle.Width(markText)
@@ -142,7 +142,7 @@ func writeTo(img image.Image, ext string) (rv *bytes.Buffer, err error) {
 
 func main() {
 
-	var target = "/Users/kanshan/Downloads/IMG_1708_1.jpg"
+	var target = "/Users/kanshan/Downloads/Slice1.png"
 	var text = "仅限域名备案使用"
 
 	if stat, err := os.Stat(target); err == nil && stat.IsDir() {
