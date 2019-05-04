@@ -9,6 +9,7 @@
 *.dll
 *.so
 *.dylib
+pkg
 
 # Test binary, built with `go test -c`
 *.test
@@ -136,3 +137,6 @@ Temporary Items
 .apdisk
 
 # End of https://www.gitignore.io/api/go,macos,intellij+all
+
+*.jpg
+*.png
