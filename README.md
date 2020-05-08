@@ -5,3 +5,12 @@
 效果图如下:
 
 ![image](https://s2.ax1x.com/2019/05/04/EaQ97n.png)
+
+## 快速开始(Quick Start)
+
+```shell
+go build src/main.go
+./main -target ~/a.png
+./main -target ~/a.png -output aaa.png -text 123123 -fonts fonts/SourceHanSansK-Normal.ttf
+./main -target ./imgs/
+```

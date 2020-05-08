@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
-	"github.com/golang/freetype/truetype"
 	"image/color"
 	"strings"
 
+	"github.com/golang/freetype/truetype"
+
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -38,7 +41,7 @@ func getFont(name string) (*truetype.Font, error) {
 }
 
 // WaterMark for adding a watermark on the image
-func WaterMark(img image.Image, markText string) (image.Image, error) {
+func WaterMark(img image.Image, markText string, fontsFile string) (image.Image, error) {
 	// image's length to canvas's length
 	bounds := img.Bounds()
 	w := vg.Length(bounds.Max.X) * vg.Inch / vgimg.DefaultDPI
@@ -56,9 +59,8 @@ func WaterMark(img image.Image, markText string) (image.Image, error) {
 	rect.Max.Y = diagonal/2 + h/2
 	c.DrawImage(rect, img)
 
-	loadFont,_ := getFont("/Users/kanshan/golandProjects/idcard_watermark/fonts/SourceHanSansK-Normal.ttf");
-	vg.AddFont("SourceHanSansK",loadFont)
-
+	loadFont, _ := getFont(fontsFile)
+	vg.AddFont("SourceHanSansK", loadFont)
 
 	fontStyle, _ := vg.MakeFont("SourceHanSansK", vg.Inch*0.15)
 
@@ -72,7 +74,7 @@ func WaterMark(img image.Image, markText string) (image.Image, error) {
 
 	// set the color of markText
 	//c.SetColor(color.RGBA{0, 0, 0, 122})
-	c.SetColor(color.RGBA{255,255,255,80})
+	c.SetColor(color.RGBA{255, 255, 255, 80})
 	//c.SetColor(color.White)
 
 	// set a random angle between 0 and π/2
@@ -108,7 +110,7 @@ func WaterMark(img image.Image, markText string) (image.Image, error) {
 }
 
 // MarkingPicture for marking picture with text
-func MarkingPicture(filepath, text string) (image.Image, error) {
+func MarkingPicture(filepath, text string, fonts string) (image.Image, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
@@ -120,7 +122,7 @@ func MarkingPicture(filepath, text string) (image.Image, error) {
 		return nil, err
 	}
 
-	img, err = WaterMark(img, text)
+	img, err = WaterMark(img, text, fonts)
 	if err != nil {
 		return nil, err
 	}
@@ -139,56 +141,59 @@ func writeTo(img image.Image, ext string) (rv *bytes.Buffer, err error) {
 	return rv, err
 }
 
+func addWatermark(target string, output string, text string, fonts string) {
+	img, err := MarkingPicture(target, text, fonts)
+	if err != nil {
+		// fmt.Printf("MarkingPicture failed, target: %v, err: %v", target, err)
+		return
+	}
+
+	ext := path.Ext(target)
+	f, err := os.Create(output)
+	if err != nil {
+		panic(err)
+	}
+
+	buff, err := writeTo(img, ext)
+	if err != nil {
+		panic(err)
+	}
+	if _, err = buff.WriteTo(f); err != nil {
+		panic(err)
+	}
+}
 
 func main() {
 
-	var target = "/Users/kanshan/Downloads/Slice1.png"
-	var text = "仅限域名备案使用"
+	var target string
+	var output string
+	var fonts string
+	var text string
+
+	flag.StringVar(&target, "target", "target.png", "target image file path. only supports .png .jpg .jpeg")
+	flag.StringVar(&output, "output", "", "output image file path. only supports .png .jpg .jpeg")
+	flag.StringVar(&fonts, "fonts", "fonts/SourceHanSansK-Normal.ttf", "fonts file.")
+	flag.StringVar(&text, "text", "仅限域名备案使用", "watermark text")
+	flag.Parse()
+
+	fmt.Printf("begin add watermark... target: %v, target: %v, fonts: %v, text: %v\n", target, target, fonts, text)
 
 	if stat, err := os.Stat(target); err == nil && stat.IsDir() {
+		// target is a directory
 		files, _ := ioutil.ReadDir(target)
 		for _, fn := range files {
-			img, err := MarkingPicture(path.Join(target, fn.Name()), text)
-			if err != nil {
-				continue
-			}
-
-			ext := path.Ext(fn.Name())
-			base := strings.Split(fn.Name(), ".")[0] + "_marked"
-			f, err := os.Create(base + ext)
-			if err != nil {
-				panic(err)
-			}
-
-			buff, err := writeTo(img, ext)
-			if err != nil {
-				panic(err)
-			}
-			if _, err = buff.WriteTo(f); err != nil {
-				panic(err)
-			}
+			filepath := path.Join(target, fn.Name())
+			output = strings.Split(path.Base(filepath), ".")[0] + "_marked" + path.Ext(filepath)
+			addWatermark(filepath, output, text, fonts)
 		}
 	} else {
-		img, err := MarkingPicture(target, text)
-		if err != nil {
-			panic(err)
+		// target is a single image file
+		if output == "" {
+			output = strings.Split(path.Base(target), ".")[0] + "_marked" + path.Ext(target)
 		}
-
-		ext := path.Ext(target)
-		base := strings.Split(path.Base(target), ".")[0] + "_marked"
-		f, err := os.Create(base + ext)
-		if err != nil {
-			panic(err)
-		}
-
-		buff, err := writeTo(img, ext)
-		if err != nil {
-			panic(err)
-		}
-
-		if _, err = buff.WriteTo(f); err != nil {
-			panic(err)
-		}
+		addWatermark(target, output, text, fonts)
 	}
+
+	fmt.Printf("add watermark finish.\n")
 
 }
